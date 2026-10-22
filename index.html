@@ -69,6 +69,20 @@ td.row-actions{white-space:nowrap;text-align:right}
 @keyframes in{from{transform:translateY(8px);opacity:0}}
 dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);max-width:400px;padding:22px}
 dialog::backdrop{background:#0008}
+h2+.bars{margin-top:-4px}
+.dist{margin-bottom:22px}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:64px 1fr 28px;align-items:center;gap:10px;font-size:.9rem}
+.bar .track{background:var(--bg);border-radius:99px;height:10px;overflow:hidden}
+.bar .fill{height:100%;border-radius:99px;transition:width .25s}
+.bar b{text-align:right}
+.pp{display:flex;align-items:center;gap:8px;margin:0;font-weight:400}
+.pp select{width:auto;padding:5px 8px}
+.backup{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.toast button{all:unset;cursor:pointer;margin-left:14px;text-decoration:underline}
+.toast button:focus-visible{outline:2px solid currentColor}
+small{font-weight:400;color:var(--muted)}
+@media print{header.top button,.layout>.panel:first-child,.toolbar,.pager,.backup,.row-actions,.toasts{display:none!important}.layout{grid-template-columns:1fr}}
 @media (max-width:860px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar .btn{grid-column:span 2}}
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
 </style>
@@ -87,6 +101,8 @@ dialog::backdrop{background:#0008}
     <div class="stat"><span>Exibindo agora</span><strong id="sFiltro">0</strong></div>
   </section>
 
+  <section class="panel dist" aria-label="Alunos por turma"><h2>Alunos por turma</h2><div class="bars" id="barras"></div></section>
+
   <div class="layout">
     <section class="panel">
       <h2 id="formTitulo">Novo aluno</h2>
@@ -95,6 +111,8 @@ dialog::backdrop{background:#0008}
           <input id="nome" autocomplete="off" placeholder="Ex.: Ana Souza" maxlength="80"><div class="err" id="eNome"></div></div>
         <div class="field"><label for="email">E-mail</label>
           <input id="email" type="email" autocomplete="off" placeholder="ana@escola.com" maxlength="100"><div class="err" id="eEmail"></div></div>
+        <div class="field"><label for="telefone">Telefone <small>(opcional)</small></label>
+          <input id="telefone" inputmode="tel" autocomplete="off" placeholder="(11) 91234-5678" maxlength="15"><div class="err" id="eTelefone"></div></div>
         <div class="field"><label for="idade">Idade</label>
           <input id="idade" type="number" inputmode="numeric" placeholder="Ex.: 16"><div class="err" id="eIdade"></div></div>
         <div class="field"><label for="turma">Turma</label>
@@ -109,7 +127,7 @@ dialog::backdrop{background:#0008}
     <section class="panel">
       <h2>Alunos cadastrados</h2>
       <div class="toolbar">
-        <input id="busca" type="search" placeholder="Buscar por nome ou e-mail" aria-label="Buscar aluno por nome ou e-mail">
+        <input id="busca" type="search" placeholder="Buscar por nome ou e-mail (atalho: /)" aria-label="Buscar aluno por nome ou e-mail">
         <select id="filtroTurma" aria-label="Filtrar por turma"><option value="">Todas as turmas</option><option>1º ADS</option><option>2º ADS</option><option>3º ADS</option></select>
         <button class="btn" type="button" id="csv">Exportar CSV</button>
       </div>
@@ -127,7 +145,13 @@ dialog::backdrop{background:#0008}
       </div>
       <div class="pager">
         <span id="infoPag"></span>
+        <label class="pp">Por página <select id="porPag" aria-label="Alunos por página"><option>5</option><option>10</option><option>20</option></select></label>
         <div class="actions"><button class="btn sm" id="ant" type="button">Anterior</button><button class="btn sm" id="prox" type="button">Próxima</button></div>
+      </div>
+      <div class="actions backup">
+        <button class="btn sm" type="button" id="backup">Baixar backup (JSON)</button>
+        <button class="btn sm" type="button" id="btnImportar">Restaurar backup</button>
+        <input type="file" id="importar" accept=".json,application/json" hidden>
       </div>
     </section>
   </div>
@@ -144,7 +168,7 @@ dialog::backdrop{background:#0008}
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script>
-const KEY = 'alunos-v1', POR_PAGINA = 5;
+const KEY = 'alunos-v1';
 const $ = id => document.getElementById(id);
 const SEED = [
   {id:1,nome:'Lucas Lima',email:'lucas@escola.com',idade:16,turma:'2º ADS'},
@@ -154,7 +178,7 @@ const SEED = [
 
 // ---------- Estado (fonte da verdade) ----------
 let alunos = carregar();
-const estado = {busca:'', turma:'', campo:'nome', dir:1, pagina:1, editId:null, delId:null};
+const estado = {busca:'', turma:'', campo:'nome', dir:1, pagina:1, porPagina:5, editId:null, delId:null};
 
 function carregar(){
   try { const d = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(d)) return d; } catch(e){}
@@ -186,11 +210,19 @@ function validarIdade(v){
   if (n < 5 || n > 100) return 'A idade deve estar entre 5 e 100 anos.';
   return '';
 }
+function validarTelefone(v){
+  const d = v.replace(/\D/g,'');
+  if (!d) return '';
+  if (d.length < 10 || d.length > 11) return 'Digite o DDD e o número, ex.: (11) 91234-5678.';
+  if (d.length === 11 && d[2] !== '9') return 'Celular deve começar com 9 depois do DDD.';
+  return '';
+}
 const validarTurma = v => v ? '' : 'Selecione a turma.';
 
 const CAMPOS = {
   nome:[validarNome,'eNome'], email:[validarEmail,'eEmail'],
-  idade:[validarIdade,'eIdade'], turma:[validarTurma,'eTurma']
+  idade:[validarIdade,'eIdade'], turma:[validarTurma,'eTurma'],
+  telefone:[validarTelefone,'eTelefone']
 };
 function validarCampo(campo){
   const [fn, idErro] = CAMPOS[campo];
@@ -229,7 +261,9 @@ function linha(a){
   const av = document.createElement('span'); av.className = 'avatar'; av.textContent = iniciais(a.nome);
   const nm = document.createElement('span'); nm.textContent = a.nome;   // textContent: seguro contra XSS
   who.append(av, nm); celula(tr, who);
-  const mail = document.createElement('span'); mail.className = 'mail'; mail.textContent = a.email; celula(tr, mail);
+  const mail = document.createElement('div'); mail.className = 'mail'; mail.textContent = a.email;
+  if (a.telefone){ const t = document.createElement('div'); t.textContent = a.telefone; mail.append(t); }
+  celula(tr, mail);
   celula(tr, document.createTextNode(String(a.idade)));
   const b = document.createElement('span');
   b.className = 'badge t' + a.turma[0]; b.textContent = a.turma; celula(tr, b);
@@ -241,9 +275,9 @@ function linha(a){
 }
 function renderizar(){
   const lista = filtrados();
-  const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+  const paginas = Math.max(1, Math.ceil(lista.length / estado.porPagina));
   estado.pagina = Math.min(estado.pagina, paginas);
-  const ini = (estado.pagina - 1) * POR_PAGINA;
+  const ini = (estado.pagina - 1) * estado.porPagina;
   const tbody = $('lista'); tbody.replaceChildren();
 
   if (!lista.length){
@@ -251,7 +285,7 @@ function renderizar(){
     td.colSpan = 5; td.className = 'empty';
     td.textContent = alunos.length ? 'Nenhum aluno encontrado. Tente outro nome ou limpe os filtros.' : 'Nenhum aluno cadastrado. Use o formulário para adicionar o primeiro.';
     tr.append(td); tbody.append(tr);
-  } else lista.slice(ini, ini + POR_PAGINA).forEach(a => tbody.append(linha(a)));
+  } else lista.slice(ini, ini + estado.porPagina).forEach(a => tbody.append(linha(a)));
 
   $('infoPag').textContent = lista.length ? `Página ${estado.pagina} de ${paginas} · ${lista.length} aluno(s)` : '';
   $('ant').disabled = estado.pagina <= 1;
@@ -272,12 +306,28 @@ function atualizarResumo(exibindo){
   const cont = {}; alunos.forEach(a => cont[a.turma] = (cont[a.turma] || 0) + 1);
   const top = Object.entries(cont).sort((a,b) => b[1] - a[1])[0];
   $('sTurma').textContent = top ? top[0] : '–';
+  const barras = $('barras'); barras.replaceChildren();
+  ['1º ADS','2º ADS','3º ADS'].forEach(t => {
+    const n = cont[t] || 0, pct = alunos.length ? n / alunos.length * 100 : 0;
+    const row = document.createElement('div'); row.className = 'bar';
+    const nome = document.createElement('span'); nome.textContent = t;
+    const trilho = document.createElement('div'); trilho.className = 'track';
+    const f = document.createElement('div'); f.className = 'fill'; f.style.width = pct + '%'; f.style.background = `var(--t${t[0]})`;
+    trilho.append(f);
+    const q = document.createElement('b'); q.textContent = n;
+    row.append(nome, trilho, q); barras.append(row);
+  });
 }
 
 // ---------- Ações ----------
-function toast(txt, tipo = 'ok'){
+function toast(txt, tipo = 'ok', acao){
   const t = document.createElement('div'); t.className = 'toast ' + tipo; t.textContent = txt;
-  $('toasts').append(t); setTimeout(() => t.remove(), 3200);
+  if (acao){
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = acao.label;
+    b.onclick = () => { acao.fn(); t.remove(); };
+    t.append(b);
+  }
+  $('toasts').append(t); setTimeout(() => t.remove(), acao ? 7000 : 3200);
 }
 function limparFormulario(){
   $('form').reset();
@@ -290,7 +340,7 @@ function limparFormulario(){
 function editar(id){
   const a = alunos.find(x => x.id === id); if (!a) return;
   estado.editId = id;
-  ['nome','email','idade','turma'].forEach(c => $(c).value = a[c]);
+  ['nome','email','idade','turma','telefone'].forEach(c => $(c).value = a[c] || '');
   $('formTitulo').textContent = 'Editar aluno';
   $('salvar').textContent = 'Salvar alterações';
   $('limpar').textContent = 'Cancelar edição';
@@ -311,7 +361,8 @@ $('form').addEventListener('submit', e => {
     nome: $('nome').value.trim().replace(/\s+/g,' '),
     email: $('email').value.trim().toLowerCase(),
     idade: Number($('idade').value),
-    turma: $('turma').value
+    turma: $('turma').value,
+    telefone: $('telefone').value.trim()
   };
   if (estado.editId){
     alunos = alunos.map(a => a.id === estado.editId ? {...a, ...dados} : a);
@@ -326,9 +377,11 @@ $('limpar').addEventListener('click', limparFormulario);
 Object.keys(CAMPOS).forEach(c => $(c).addEventListener('blur', () => { if ($(c).value !== '') validarCampo(c); }));
 
 $('okDel').addEventListener('click', () => {
+  const removido = alunos.find(a => a.id === estado.delId);
   alunos = alunos.filter(a => a.id !== estado.delId);
   if (estado.editId === estado.delId) limparFormulario();
-  salvarLocal(); $('confirma').close(); renderizar(); toast('Aluno excluído.');
+  salvarLocal(); $('confirma').close(); renderizar();
+  toast('Aluno excluído.', 'ok', {label:'Desfazer', fn: () => { alunos.push(removido); salvarLocal(); renderizar(); }});
 });
 $('cancelaDel').addEventListener('click', () => $('confirma').close());
 
@@ -351,11 +404,61 @@ $('csv').addEventListener('click', () => {
     if (/^[=+\-@]/.test(s)) s = "'" + s;          // evita injeção de fórmulas no Excel
     return '"' + s.replace(/"/g, '""') + '"';
   };
-  const linhas = [['Nome','E-mail','Idade','Turma'], ...lista.map(a => [a.nome, a.email, a.idade, a.turma])];
+  const linhas = [['Nome','E-mail','Telefone','Idade','Turma'], ...lista.map(a => [a.nome, a.email, a.telefone || '', a.idade, a.turma])];
   const blob = new Blob(['\ufeff' + linhas.map(l => l.map(esc).join(';')).join('\n')], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'alunos.csv'; a.click();
   URL.revokeObjectURL(a.href);
+});
+
+// ---------- Extras: itens por página, atalho, máscara, backup ----------
+$('porPag').addEventListener('change', e => { estado.porPagina = Number(e.target.value); estado.pagina = 1; renderizar(); });
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)){ e.preventDefault(); $('busca').focus(); }
+});
+$('telefone').addEventListener('input', e => {
+  const d = e.target.value.replace(/\D/g,'').slice(0,11);
+  let s = d;
+  if (d.length > 10) s = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  else if (d.length > 6) s = `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  else if (d.length > 2) s = `(${d.slice(0,2)}) ${d.slice(2)}`;
+  else if (d.length) s = `(${d}`;
+  e.target.value = s;
+});
+$('backup').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(alunos, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'backup-alunos.json'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('btnImportar').addEventListener('click', () => $('importar').click());
+$('importar').addEventListener('change', e => {
+  const arq = e.target.files[0]; if (!arq) return;
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try {
+      const dados = JSON.parse(leitor.result);
+      if (!Array.isArray(dados)) throw new Error('formato');
+      const emails = new Set(alunos.map(a => a.email.toLowerCase()));
+      let novos = 0;
+      dados.forEach(d => {                      // cada registro importado passa pela mesma validação do formulário
+        const nome = String(d.nome || '').trim().replace(/\s+/g,' ');
+        const email = String(d.email || '').trim().toLowerCase();
+        const turma = String(d.turma || '');
+        const tel = String(d.telefone || '');
+        if (validarNome(nome) || validarIdade(String(d.idade ?? '')) || validarTelefone(tel)) return;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || emails.has(email)) return;
+        if (!['1º ADS','2º ADS','3º ADS'].includes(turma)) return;
+        emails.add(email);
+        alunos.push({id: proximoId(), nome, email, idade: Number(d.idade), turma, telefone: tel});
+        novos++;
+      });
+      salvarLocal(); renderizar();
+      toast(`${novos} aluno(s) importado(s).`, novos ? 'ok' : 'bad');
+    } catch (err) { toast('Arquivo inválido. Use um backup baixado por esta página.', 'bad'); }
+    e.target.value = '';
+  };
+  leitor.readAsText(arq);
 });
 
 // ---------- Tema ----------
