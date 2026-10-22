@@ -1,110 +1,378 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Caça aos Bugs — Cadastro de Alunos</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body{background:#f3f6fb}.hero{background:linear-gradient(120deg,#152a52,#2876b8);color:white}
-    .card{border:0;box-shadow:0 5px 18px #1b315014}.small-note{font-size:.88rem}
-    .table td{vertical-align:middle}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastro de Alunos</title>
+<style>
+:root{
+  --bg:#eef1f5;--surface:#fff;--ink:#1b2430;--muted:#5d6b7c;--line:#dde3ea;
+  --brand:#2f4bc4;--brand-ink:#fff;--brand-soft:#e6eafb;
+  --danger:#c0392b;--danger-soft:#fbe9e7;--ok:#1d7a4d;--ok-soft:#e3f4eb;
+  --t1:#b45309;--t1s:#fdf0d9;--t2:#0f766e;--t2s:#dcf3f0;--t3:#7c3aed;--t3s:#eee6fd;
+  --radius:10px;
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#12171f;--surface:#1b222c;--ink:#e8edf3;--muted:#99a6b6;--line:#2b3542;
+  --brand:#7e95ff;--brand-ink:#0f1522;--brand-soft:#242e52;
+  --danger:#ff8b7d;--danger-soft:#3a2220;--ok:#56d39a;--ok-soft:#173528;
+  --t1:#f5b968;--t1s:#3b2d17;--t2:#5fd4c8;--t2s:#133632;--t3:#b99bff;--t3s:#2c2347;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:16px;padding-bottom:16px}
+h1{font-size:1.35rem;margin:0}
+header p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+h2{font-size:1.05rem;margin:0 0 16px}
+main{padding:24px 0 48px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.stat span{display:block;color:var(--muted);font-size:.85rem}
+.stat strong{font-size:1.7rem;font-weight:650;letter-spacing:-.02em}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.field{margin-bottom:14px}
+label{display:block;font-weight:600;font-size:.88rem;margin-bottom:5px}
+input,select{width:100%;padding:10px 12px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px}
+input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--danger)}
+.err{color:var(--danger);font-size:.82rem;min-height:1.1em;margin-top:4px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:.84rem}
+.btn.link{border-color:transparent;background:none;color:var(--danger)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.toolbar{display:grid;grid-template-columns:1fr 160px auto;gap:10px;margin-bottom:14px}
+.tablebox{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th button{all:unset;cursor:pointer;font-weight:650;font-size:.85rem;color:var(--muted);display:inline-flex;gap:5px}
+th button:hover{color:var(--ink)}
+th button:focus-visible{outline:3px solid var(--brand)}
+.who{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:.82rem;flex:none}
+.mail{color:var(--muted);font-size:.9rem;word-break:break-all}
+.badge{padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:650;white-space:nowrap}
+.t1{background:var(--t1s);color:var(--t1)}.t2{background:var(--t2s);color:var(--t2)}.t3{background:var(--t3s);color:var(--t3)}
+td.row-actions{white-space:nowrap;text-align:right}
+.empty{text-align:center;padding:36px 10px;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
+.toasts{position:fixed;right:18px;bottom:18px;display:grid;gap:8px;z-index:50}
+.toast{padding:11px 16px;border-radius:8px;font-weight:600;box-shadow:0 6px 20px #0003;animation:in .18s ease-out}
+.toast.ok{background:var(--ok-soft);color:var(--ok)}.toast.bad{background:var(--danger-soft);color:var(--danger)}
+@keyframes in{from{transform:translateY(8px);opacity:0}}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);max-width:400px;padding:22px}
+dialog::backdrop{background:#0008}
+@media (max-width:860px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar .btn{grid-column:span 2}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
 </head>
 <body>
-<nav class="navbar navbar-dark bg-dark"><div class="container"><span class="navbar-brand mb-0">🐞 Caça aos Bugs</span><span class="text-white-50">Missão nível 2</span></div></nav>
-<header class="hero py-4"><div class="container"><span class="badge text-bg-warning mb-2">DESAFIO PARA AS EQUIPES</span><h1 class="h2">Sistema de Cadastro de Alunos</h1><p class="mb-0">O sistema foi atualizado. Agora há 10 falhas escondidas — nem todas aparecem no primeiro teste.</p></div></header>
-<main class="container py-4">
-  <div class="alert alert-info"><strong>Missão:</strong> teste com dados válidos, inválidos, repetidos e inesperados. Não altere o código nesta rodada. Registre <em>ação, resultado encontrado, resultado esperado e gravidade</em>.</div>
-  <div class="row g-4">
-    <section class="col-lg-5">
-      <div class="card p-4">
-        <h2 class="h5 mb-3">Cadastrar aluno</h2>
-        <form id="studentForm">
-          <div class="mb-3"><label for="nome" class="form-label">Nome completo</label><input id="nome" class="form-control" placeholder="Ex.: Ana Souza"></div>
-          <div class="mb-3"><label for="email" class="form-label">E-mail</label><input id="email" type="text" class="form-control" placeholder="ana@escola.com"></div>
-          <div class="mb-3"><label for="idade" class="form-label">Idade</label><input id="idade" type="number" class="form-control" placeholder="Ex.: 16"></div>
-          <div class="mb-3"><label for="turma" class="form-label">Turma</label><select id="turma" class="form-select"><option value="">Selecione...</option><option>1º ADS</option><option>2º ADS</option><option>3º ADS</option></select></div>
-          <div class="d-grid gap-2"><button class="btn btn-primary" type="submit">Cadastrar aluno</button><button class="btn btn-outline-secondary" type="button" id="limpar">Limpar formulário</button></div>
-          <div id="mensagem" class="mt-3" aria-live="polite"></div>
-        </form>
-      </div>
+<header class="top"><div class="wrap">
+  <div><h1>Cadastro de Alunos</h1><p>Cadastre, busque e organize as turmas.</p></div>
+  <button class="btn" id="tema" type="button" aria-pressed="false">Modo escuro</button>
+</div></header>
+
+<main class="wrap">
+  <section class="stats" aria-label="Resumo">
+    <div class="stat"><span>Total de alunos</span><strong id="sTotal">0</strong></div>
+    <div class="stat"><span>Idade média</span><strong id="sIdade">–</strong></div>
+    <div class="stat"><span>Maior turma</span><strong id="sTurma">–</strong></div>
+    <div class="stat"><span>Exibindo agora</span><strong id="sFiltro">0</strong></div>
+  </section>
+
+  <div class="layout">
+    <section class="panel">
+      <h2 id="formTitulo">Novo aluno</h2>
+      <form id="form" novalidate>
+        <div class="field"><label for="nome">Nome completo</label>
+          <input id="nome" autocomplete="off" placeholder="Ex.: Ana Souza" maxlength="80"><div class="err" id="eNome"></div></div>
+        <div class="field"><label for="email">E-mail</label>
+          <input id="email" type="email" autocomplete="off" placeholder="ana@escola.com" maxlength="100"><div class="err" id="eEmail"></div></div>
+        <div class="field"><label for="idade">Idade</label>
+          <input id="idade" type="number" inputmode="numeric" placeholder="Ex.: 16"><div class="err" id="eIdade"></div></div>
+        <div class="field"><label for="turma">Turma</label>
+          <select id="turma"><option value="">Selecione...</option><option>1º ADS</option><option>2º ADS</option><option>3º ADS</option></select><div class="err" id="eTurma"></div></div>
+        <div class="actions">
+          <button class="btn primary" type="submit" id="salvar">Cadastrar aluno</button>
+          <button class="btn" type="button" id="limpar">Limpar</button>
+        </div>
+      </form>
     </section>
-    <section class="col-lg-7">
-      <div class="card p-4">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3"><h2 class="h5 mb-0">Alunos cadastrados</h2><span class="badge text-bg-primary">Total: <span id="total">3</span></span></div>
-        <label for="busca" class="form-label">Buscar aluno por nome ou e-mail</label>
-        <input id="busca" class="form-control mb-3" placeholder="Digite parte do nome ou e-mail...">
-        <div class="table-responsive"><table class="table table-hover align-middle">
-          <thead class="table-light"><tr><th>Nome</th><th>E-mail</th><th>Idade</th><th>Turma</th><th>Ação</th></tr></thead>
-          <tbody id="lista">
-            <tr><td class="student-name">Lucas Lima</td><td>lucas@escola.com</td><td>16</td><td>2º ADS</td><td><button class="btn btn-sm btn-danger excluir">Excluir</button></td></tr>
-            <tr><td class="student-name">Marina Alves</td><td>marina@escola.com</td><td>17</td><td>3º ADS</td><td><button class="btn btn-sm btn-danger excluir">Excluir</button></td></tr>
-            <tr><td class="student-name">Ana Souza</td><td>ana@escola.com</td><td>16</td><td>2º ADS</td><td><button class="btn btn-sm btn-danger excluir">Excluir</button></td></tr>
-          </tbody>
-        </table></div>
-        <p class="text-secondary small-note mb-0">Dica: teste busca com letras maiúsculas/minúsculas, nomes parciais e e-mails.</p>
+
+    <section class="panel">
+      <h2>Alunos cadastrados</h2>
+      <div class="toolbar">
+        <input id="busca" type="search" placeholder="Buscar por nome ou e-mail" aria-label="Buscar aluno por nome ou e-mail">
+        <select id="filtroTurma" aria-label="Filtrar por turma"><option value="">Todas as turmas</option><option>1º ADS</option><option>2º ADS</option><option>3º ADS</option></select>
+        <button class="btn" type="button" id="csv">Exportar CSV</button>
       </div>
-      <div class="card p-4 mt-4"><h2 class="h6">Relatório da equipe</h2><ol class="small-note mb-0"><li>Qual ação você executou?</li><li>O que aconteceu?</li><li>O que deveria acontecer?</li><li>Qual característica da qualidade foi afetada?</li><li>Qual a gravidade: baixa, média ou alta?</li></ol></div>
+      <div class="tablebox">
+        <table>
+          <thead><tr>
+            <th aria-sort="ascending" id="thNome"><button data-campo="nome" type="button">Nome <i></i></button></th>
+            <th><button data-campo="email" type="button">E-mail <i></i></button></th>
+            <th><button data-campo="idade" type="button">Idade <i></i></button></th>
+            <th><button data-campo="turma" type="button">Turma <i></i></button></th>
+            <th><span class="sr" style="font-size:.85rem;color:var(--muted);font-weight:650">Ações</span></th>
+          </tr></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="infoPag"></span>
+        <div class="actions"><button class="btn sm" id="ant" type="button">Anterior</button><button class="btn sm" id="prox" type="button">Próxima</button></div>
+      </div>
     </section>
   </div>
-  <footer class="text-center text-secondary small py-4">Atividade didática • HTML + CSS + Bootstrap + JavaScript</footer>
 </main>
+
+<dialog id="confirma">
+  <h2>Excluir aluno?</h2>
+  <p id="confirmaTxt" style="margin:0 0 18px;color:var(--muted)"></p>
+  <div class="actions" style="justify-content:flex-end">
+    <button class="btn" id="cancelaDel" type="button">Cancelar</button>
+    <button class="btn danger" id="okDel" type="button">Excluir</button>
+  </div>
+</dialog>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
 <script>
-  const form = document.getElementById('studentForm');
-  const lista = document.getElementById('lista');
-  const mensagem = document.getElementById('mensagem');
-  const total = document.getElementById('total');
+const KEY = 'alunos-v1', POR_PAGINA = 5;
+const $ = id => document.getElementById(id);
+const SEED = [
+  {id:1,nome:'Lucas Lima',email:'lucas@escola.com',idade:16,turma:'2º ADS'},
+  {id:2,nome:'Marina Alves',email:'marina@escola.com',idade:17,turma:'3º ADS'},
+  {id:3,nome:'Ana Souza',email:'ana@escola.com',idade:16,turma:'2º ADS'}
+];
 
-  form.addEventListener('submit', function(event) {
-    event.preventDefault();
-    const nome = document.getElementById('nome').value;
-    const email = document.getElementById('email').value;
-    const idade = document.getElementById('idade').value;
-    const turma = document.getElementById('turma').value;
+// ---------- Estado (fonte da verdade) ----------
+let alunos = carregar();
+const estado = {busca:'', turma:'', campo:'nome', dir:1, pagina:1, editId:null, delId:null};
 
-    // BUG 1: não bloqueia campos vazios.
-    // BUG 2: valida e-mail apenas pela presença de @ e permite e-mail vazio.
-    if (email.includes('@') || email === '') {
-      // BUG 3: não impede e-mail duplicado.
-      // BUG 4: aceita nome composto só por espaços.
-      // BUG 5: não valida idade mínima/máxima nem valores negativos.
-      // BUG 6: concatena dados do usuário em innerHTML.
-      const linha = document.createElement('tr');
-      linha.innerHTML = `<td class="student-name">${nome}</td><td>${email}</td><td>${idade}</td><td>${turma}</td><td><button class="btn btn-sm btn-danger excluir">Excluir</button></td>`;
-      lista.appendChild(linha);
-      // BUG 7: contador não é atualizado após cadastrar.
-      mensagem.innerHTML = '<div class="alert alert-success mb-0">Aluno cadastrado com sucesso!</div>';
-      form.reset();
-      filtrarAlunos();
-    } else {
-      mensagem.innerHTML = '<div class="alert alert-danger mb-0">E-mail inválido.</div>';
-    }
+function carregar(){
+  try { const d = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(d)) return d; } catch(e){}
+  return SEED.slice();
+}
+function salvarLocal(){ try { localStorage.setItem(KEY, JSON.stringify(alunos)); } catch(e){} }
+const proximoId = () => alunos.reduce((m,a) => Math.max(m,a.id), 0) + 1;
+const normalizar = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+
+// ---------- Validação (cada função cuida de um campo) ----------
+function validarNome(v){
+  v = v.trim().replace(/\s+/g,' ');
+  if (!v) return 'Informe o nome completo.';
+  if (v.length < 3 || v.split(' ').length < 2) return 'Digite nome e sobrenome.';
+  if (!/^[\p{L}][\p{L}' .-]*$/u.test(v)) return 'Use apenas letras no nome.';
+  return '';
+}
+function validarEmail(v){
+  v = v.trim();
+  if (!v) return 'Informe o e-mail.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'Digite um e-mail válido, como ana@escola.com.';
+  const dup = alunos.some(a => a.email.toLowerCase() === v.toLowerCase() && a.id !== estado.editId);
+  return dup ? 'Já existe um aluno com este e-mail.' : '';
+}
+function validarIdade(v){
+  if (v === '') return 'Informe a idade.';
+  const n = Number(v);
+  if (!Number.isInteger(n)) return 'A idade deve ser um número inteiro.';
+  if (n < 5 || n > 100) return 'A idade deve estar entre 5 e 100 anos.';
+  return '';
+}
+const validarTurma = v => v ? '' : 'Selecione a turma.';
+
+const CAMPOS = {
+  nome:[validarNome,'eNome'], email:[validarEmail,'eEmail'],
+  idade:[validarIdade,'eIdade'], turma:[validarTurma,'eTurma']
+};
+function validarCampo(campo){
+  const [fn, idErro] = CAMPOS[campo];
+  const msg = fn($(campo).value);
+  $(idErro).textContent = msg;
+  $(campo).setAttribute('aria-invalid', msg ? 'true' : 'false');
+  return !msg;
+}
+
+// ---------- Renderização ----------
+function filtrados(){
+  const termo = normalizar(estado.busca.trim());
+  const lista = alunos.filter(a =>
+    (!estado.turma || a.turma === estado.turma) &&
+    (!termo || normalizar(a.nome).includes(termo) || normalizar(a.email).includes(termo)));
+  lista.sort((a,b) => {
+    const x = a[estado.campo], y = b[estado.campo];
+    const r = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR');
+    return r * estado.dir;
   });
+  return lista;
+}
+function iniciais(nome){
+  const p = nome.trim().split(/\s+/);
+  return (p[0][0] + (p.length > 1 ? p[p.length-1][0] : '')).toUpperCase();
+}
+function celula(tr, filho){ const td = document.createElement('td'); td.append(filho); tr.append(td); return td; }
+function botao(txt, cls, fn, aria){
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = cls; b.textContent = txt; b.setAttribute('aria-label', aria); b.onclick = fn;
+  return b;
+}
+function linha(a){
+  const tr = document.createElement('tr');
+  const who = document.createElement('div'); who.className = 'who';
+  const av = document.createElement('span'); av.className = 'avatar'; av.textContent = iniciais(a.nome);
+  const nm = document.createElement('span'); nm.textContent = a.nome;   // textContent: seguro contra XSS
+  who.append(av, nm); celula(tr, who);
+  const mail = document.createElement('span'); mail.className = 'mail'; mail.textContent = a.email; celula(tr, mail);
+  celula(tr, document.createTextNode(String(a.idade)));
+  const b = document.createElement('span');
+  b.className = 'badge t' + a.turma[0]; b.textContent = a.turma; celula(tr, b);
+  const td = document.createElement('td'); td.className = 'row-actions';
+  td.append(botao('Editar','btn sm',() => editar(a.id),'Editar ' + a.nome), ' ',
+            botao('Excluir','btn sm link',() => pedirExclusao(a.id),'Excluir ' + a.nome));
+  tr.append(td);
+  return tr;
+}
+function renderizar(){
+  const lista = filtrados();
+  const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+  estado.pagina = Math.min(estado.pagina, paginas);
+  const ini = (estado.pagina - 1) * POR_PAGINA;
+  const tbody = $('lista'); tbody.replaceChildren();
 
-  // BUG 8: limpar formulário não limpa a mensagem.
-  document.getElementById('limpar').addEventListener('click', function() {
-    form.reset();
+  if (!lista.length){
+    const tr = document.createElement('tr'), td = document.createElement('td');
+    td.colSpan = 5; td.className = 'empty';
+    td.textContent = alunos.length ? 'Nenhum aluno encontrado. Tente outro nome ou limpe os filtros.' : 'Nenhum aluno cadastrado. Use o formulário para adicionar o primeiro.';
+    tr.append(td); tbody.append(tr);
+  } else lista.slice(ini, ini + POR_PAGINA).forEach(a => tbody.append(linha(a)));
+
+  $('infoPag').textContent = lista.length ? `Página ${estado.pagina} de ${paginas} · ${lista.length} aluno(s)` : '';
+  $('ant').disabled = estado.pagina <= 1;
+  $('prox').disabled = estado.pagina >= paginas;
+
+  document.querySelectorAll('th').forEach(th => th.removeAttribute('aria-sort'));
+  document.querySelectorAll('th button').forEach(btn => {
+    const ativo = btn.dataset.campo === estado.campo;
+    btn.querySelector('i').textContent = ativo ? (estado.dir === 1 ? '▲' : '▼') : '';
+    if (ativo) btn.parentElement.setAttribute('aria-sort', estado.dir === 1 ? 'ascending' : 'descending');
   });
+  atualizarResumo(lista.length);
+}
+function atualizarResumo(exibindo){
+  $('sTotal').textContent = alunos.length;
+  $('sFiltro').textContent = exibindo;
+  $('sIdade').textContent = alunos.length ? (alunos.reduce((s,a) => s + a.idade, 0) / alunos.length).toFixed(1).replace('.',',') : '–';
+  const cont = {}; alunos.forEach(a => cont[a.turma] = (cont[a.turma] || 0) + 1);
+  const top = Object.entries(cont).sort((a,b) => b[1] - a[1])[0];
+  $('sTurma').textContent = top ? top[0] : '–';
+}
 
-  lista.addEventListener('click', function(event) {
-    if (event.target.classList.contains('excluir')) {
-      event.target.closest('tr').remove();
-      // BUG 9: contador não é atualizado após excluir.
-    }
-  });
+// ---------- Ações ----------
+function toast(txt, tipo = 'ok'){
+  const t = document.createElement('div'); t.className = 'toast ' + tipo; t.textContent = txt;
+  $('toasts').append(t); setTimeout(() => t.remove(), 3200);
+}
+function limparFormulario(){
+  $('form').reset();
+  Object.keys(CAMPOS).forEach(c => { $(CAMPOS[c][1]).textContent = ''; $(c).removeAttribute('aria-invalid'); });
+  estado.editId = null;
+  $('formTitulo').textContent = 'Novo aluno';
+  $('salvar').textContent = 'Cadastrar aluno';
+  $('limpar').textContent = 'Limpar';
+}
+function editar(id){
+  const a = alunos.find(x => x.id === id); if (!a) return;
+  estado.editId = id;
+  ['nome','email','idade','turma'].forEach(c => $(c).value = a[c]);
+  $('formTitulo').textContent = 'Editar aluno';
+  $('salvar').textContent = 'Salvar alterações';
+  $('limpar').textContent = 'Cancelar edição';
+  $('nome').focus();
+}
+function pedirExclusao(id){
+  const a = alunos.find(x => x.id === id); if (!a) return;
+  estado.delId = id;
+  $('confirmaTxt').textContent = `${a.nome} será removido da lista. Essa ação não pode ser desfeita.`;
+  $('confirma').showModal();
+}
 
-  function filtrarAlunos() {
-    const termo = document.getElementById('busca').value;
-    const linhas = lista.querySelectorAll('tr');
-    linhas.forEach(function(linha) {
-      const nome = linha.cells[0].textContent;
-      const email = linha.cells[1].textContent;
-      // BUG 10: busca exige correspondência exata e diferencia maiúsculas/minúsculas.
-      linha.style.display = (nome === termo || email === termo || termo === '') ? '' : 'none';
-    });
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const ok = Object.keys(CAMPOS).map(validarCampo).every(Boolean);   // valida todos, sem parar no primeiro erro
+  if (!ok){ toast('Corrija os campos destacados.', 'bad'); return; }
+  const dados = {
+    nome: $('nome').value.trim().replace(/\s+/g,' '),
+    email: $('email').value.trim().toLowerCase(),
+    idade: Number($('idade').value),
+    turma: $('turma').value
+  };
+  if (estado.editId){
+    alunos = alunos.map(a => a.id === estado.editId ? {...a, ...dados} : a);
+    toast('Aluno atualizado.');
+  } else {
+    alunos.push({id: proximoId(), ...dados});
+    toast('Aluno cadastrado.');
   }
-  document.getElementById('busca').addEventListener('input', filtrarAlunos);
+  salvarLocal(); limparFormulario(); renderizar();
+});
+$('limpar').addEventListener('click', limparFormulario);
+Object.keys(CAMPOS).forEach(c => $(c).addEventListener('blur', () => { if ($(c).value !== '') validarCampo(c); }));
+
+$('okDel').addEventListener('click', () => {
+  alunos = alunos.filter(a => a.id !== estado.delId);
+  if (estado.editId === estado.delId) limparFormulario();
+  salvarLocal(); $('confirma').close(); renderizar(); toast('Aluno excluído.');
+});
+$('cancelaDel').addEventListener('click', () => $('confirma').close());
+
+$('busca').addEventListener('input', e => { estado.busca = e.target.value; estado.pagina = 1; renderizar(); });
+$('filtroTurma').addEventListener('change', e => { estado.turma = e.target.value; estado.pagina = 1; renderizar(); });
+$('ant').addEventListener('click', () => { estado.pagina--; renderizar(); });
+$('prox').addEventListener('click', () => { estado.pagina++; renderizar(); });
+document.querySelectorAll('th button').forEach(btn => btn.addEventListener('click', () => {
+  const c = btn.dataset.campo;
+  estado.dir = estado.campo === c ? -estado.dir : 1;
+  estado.campo = c; renderizar();
+}));
+
+// ---------- Exportar CSV ----------
+$('csv').addEventListener('click', () => {
+  const lista = filtrados();
+  if (!lista.length){ toast('Não há alunos para exportar.', 'bad'); return; }
+  const esc = v => {
+    let s = String(v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s;          // evita injeção de fórmulas no Excel
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const linhas = [['Nome','E-mail','Idade','Turma'], ...lista.map(a => [a.nome, a.email, a.idade, a.turma])];
+  const blob = new Blob(['\ufeff' + linhas.map(l => l.map(esc).join(';')).join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'alunos.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// ---------- Tema ----------
+function aplicarTema(escuro){
+  document.documentElement.dataset.theme = escuro ? 'dark' : 'light';
+  $('tema').textContent = escuro ? 'Modo claro' : 'Modo escuro';
+  $('tema').setAttribute('aria-pressed', escuro);
+}
+let escuro = matchMedia('(prefers-color-scheme: dark)').matches;
+try { const t = localStorage.getItem('tema-alunos'); if (t) escuro = t === 'dark'; } catch(e){}
+aplicarTema(escuro);
+$('tema').addEventListener('click', () => {
+  escuro = !escuro; aplicarTema(escuro);
+  try { localStorage.setItem('tema-alunos', escuro ? 'dark' : 'light'); } catch(e){}
+});
+
+renderizar();
 </script>
 </body>
 </html>
